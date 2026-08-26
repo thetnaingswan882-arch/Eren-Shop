@@ -70,21 +70,36 @@ def init_db():
     # ==========================================
 # FLASHTOPUP FUNCTIONS
 # ==========================================
+
 def create_flashtopup_signature(method, path, body):
     timestamp = str(int(time.time()))
     nonce = str(uuid.uuid4())
+
     body_str = json.dumps(body, separators=(',', ':')) if body else ""
     body_hash = hashlib.sha256(body_str.encode()).hexdigest()
+
     message = f"{method}\n{path}\n{timestamp}\n{nonce}\n{body_hash}\n"
-    signature = hmac.new(FLASHTOPUP_API_KEY.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+    signature = hmac.new(
+        FLASHTOPUP_API_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
     return timestamp, nonce, signature
 
-def flash_topup_enabled():
-    return bool(FLASHTOPUP_API_ID and FLASHTOPUP_API_KEY and FLASHTOPUP_BASE_URL)
 
-    def flash_place_order(game, package, game_id, server_id, order_id):
+def flash_topup_enabled():
+    return bool(
+        FLASHTOPUP_API_ID
+        and FLASHTOPUP_API_KEY
+        and FLASHTOPUP_BASE_URL
+    )
+
+
+def flash_place_order(game, package, game_id, server_id, order_id):
     product_code = ""
-    
+
     # ML Product Codes
     if game == "ML":
         if "10 💎" in package:
@@ -118,63 +133,89 @@ def flash_topup_enabled():
         elif "Weekly Pass" in package:
             product_code = "ML_WEEKLY_PASS"
 
-            # PUBG Product Codes
-elif game == "PUBG":
-    if "60 UC" in package:
-        product_code = "PUBG_UC_60"
-    elif "325 UC" in package:
-        product_code = "PUBG_UC_325"
-    elif "660 UC" in package:
-        product_code = "PUBG_UC_660"
-    elif "1800 UC" in package:
-        product_code = "PUBG_UC_1800"
-    elif "3850 UC" in package:
-        product_code = "PUBG_UC_3850"
+    # PUBG Product Codes
+    elif game == "PUBG":
+        if "60 UC" in package:
+            product_code = "PUBG_UC_60"
+        elif "325 UC" in package:
+            product_code = "PUBG_UC_325"
+        elif "660 UC" in package:
+            product_code = "PUBG_UC_660"
+        elif "1800 UC" in package:
+            product_code = "PUBG_UC_1800"
+        elif "3850 UC" in package:
+            product_code = "PUBG_UC_3850"
 
-# HOK Product Codes
-elif game == "HOK":
-    if "3 Months" in package:
-        product_code = "HOK_3_MONTHS"
-    elif "6 Months" in package:
-        product_code = "HOK_6_MONTHS"
-    elif "12 Months" in package:
-        product_code = "HOK_12_MONTHS"
+    # HOK Product Codes
+    elif game == "HOK":
+        if "3 Months" in package:
+            product_code = "HOK_3_MONTHS"
+        elif "6 Months" in package:
+            product_code = "HOK_6_MONTHS"
+        elif "12 Months" in package:
+            product_code = "HOK_12_MONTHS"
 
-if not product_code:
-    return {"success": False, "error": f"Package '{package}' အတွက် Product Code မတွေ့ပါ။"}
+    if not product_code:
+        return {
+            "success": False,
+            "error": f"Package '{package}' အတွက် Product Code မတွေ့ပါ။"
+        }
 
     path = "/order"
-url = f"{FLASHTOPUP_BASE_URL}/order"
+    url = f"{FLASHTOPUP_BASE_URL}/order"
 
-payload = {
-    "product_code": product_code,
-    "user_id": game_id,
-    "server_id": server_id if server_id else "",
-    "amount": 1,
-    "reference_id": str(order_id)
-}
+    payload = {
+        "product_code": product_code,
+        "user_id": game_id,
+        "server_id": server_id if server_id else "",
+        "amount": 1,
+        "reference_id": str(order_id)
+    }
 
-timestamp, nonce, signature = create_flashtopup_signature("POST", path, payload)
+    timestamp, nonce, signature = create_flashtopup_signature(
+        "POST",
+        path,
+        payload
+    )
 
-headers = {
-    "Accept": "application/json",
-    "Content-Type": "application/json",
-    "X-FT-API-ID": FLASHTOPUP_API_ID,
-    "X-FT-Timestamp": timestamp,
-    "X-FT-Nonce": nonce,
-    "X-FT-Signature": signature
-}
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-FT-API-ID": FLASHTOPUP_API_ID,
+        "X-FT-Timestamp": timestamp,
+        "X-FT-Nonce": nonce,
+        "X-FT-Signature": signature
+    }
 
-try:
-    response = requests.post(url, headers=headers, json=payload, timeout=30)
-    response_data = response.json()
-    if response.status_code == 200 and response_data.get("status") == "success":
-        return {"success": True, "data": response_data}
-    else:
-        return {"success": False, "error": response.text}
-except Exception as e:
-    return {"success": False, "error": str(e)}
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
 
+        response_data = response.json()
+
+        if (
+            response.status_code == 200
+            and response_data.get("status") == "success"
+        ):
+            return {
+                "success": True,
+                "data": response_data
+            }
+        else:
+            return {
+                "success": False,
+                "error": response.text
+            }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+    }
     # ==========================================
 # SMILE ONE FUNCTIONS
 # ==========================================

@@ -1,4 +1,4 @@
-app_py_content = """from flask import render_template, Flask, request, session, redirect, url_for
+from flask import render_template, Flask, request, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
@@ -10,28 +10,22 @@ import urllib.parse
 
 app = Flask(__name__)
 
-# Config & Environment Variables
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 DB_FILE = os.environ.get("DB_FILE", "website.db")
-
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 OWNER_CHAT_ID = os.environ.get("OWNER_CHAT_ID", "")
 
-STYLE = \"\"\"
+STYLE = """
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; }
 .box { max-width: 500px; margin: auto; background: #0d1117; padding: 20px; border-radius: 12px; border: 1px solid #222; }
 input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #111827; color: #fff; }
 button { background: #14b8a6; font-weight: bold; cursor: pointer; border: none; }
-button.green { background: #16a34a; }
-button.red { background: #dc2626; }
 a { color: #14b8a6; text-decoration: none; }
-.error { color: #f87171; }
-.success { color: #4ade80; }
 .card { background: #111827; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
 </style>
-\"\"\"
+"""
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,7 +41,7 @@ def get_db():
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute(\"\"\"
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
@@ -56,8 +50,8 @@ def init_db():
             balance REAL DEFAULT 0,
             created_at TEXT
         )
-    \"\"\")
-    cursor.execute(\"\"\"
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             order_id TEXT UNIQUE,
@@ -71,7 +65,7 @@ def init_db():
             status TEXT DEFAULT 'Pending',
             created_at TEXT
         )
-    \"\"\")
+    """)
     conn.commit()
     conn.close()
 
@@ -99,19 +93,17 @@ def send_telegram_message(chat_id, text):
 
 def send_order_to_owner(order):
     message = (
-        "🛒 <b>New Order Received</b>\\n\\n"
-        f"Order ID: {order.get('order_id')}\\n"
-        f"Username: {order.get('username')}\\n"
-        f"Game: {order.get('game')}\\n"
-        f"Package: {order.get('package')}\\n"
-        f"Game ID: {order.get('game_id')}\\n"
-        f"Server ID: {order.get('server_id')}\\n"
-        f"Payment: {order.get('payment')}\\n"
+        "🛒 <b>New Order Received</b>\n\n"
+        f"Order ID: {order.get('order_id')}\n"
+        f"Username: {order.get('username')}\n"
+        f"Game: {order.get('game')}\n"
+        f"Package: {order.get('package')}\n"
+        f"Game ID: {order.get('game_id')}\n"
+        f"Server ID: {order.get('server_id')}\n"
+        f"Payment: {order.get('payment')}\n"
         f"Transaction: {order.get('transaction')}"
     )
     return send_telegram_message(OWNER_CHAT_ID, message)
-
-# --- ROUTES ---
 
 @app.route("/")
 def index():
@@ -120,7 +112,7 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body>
+        return f"""<!DOCTYPE html><html><head>{STYLE}</head><body>
         <div class="box"><h1>🔐 Login</h1>
         <form method="POST">
         <input type="text" name="username" placeholder="Username" required>
@@ -128,7 +120,7 @@ def login():
         <button type="submit">Login</button>
         </form>
         <p><a href="/register">Register New Account</a></p>
-        </div></body></html>\"\"\"
+        </div></body></html>"""
 
     username = clean_text(request.form.get("username"))
     password = clean_text(request.form.get("password"))
@@ -147,7 +139,7 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
-        return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body>
+        return f"""<!DOCTYPE html><html><head>{STYLE}</head><body>
         <div class="box"><h1>📝 Register</h1>
         <form method="POST">
         <input type="text" name="username" placeholder="Username" required>
@@ -155,7 +147,7 @@ def register():
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Register</button>
         </form>
-        </div></body></html>\"\"\"
+        </div></body></html>"""
 
     username = clean_text(request.form.get("username"))
     email = clean_text(request.form.get("email"))
@@ -192,7 +184,7 @@ def dashboard():
 
     balance = user["balance"] if user else 0
 
-    return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body>
+    return f"""<!DOCTYPE html><html><head>{STYLE}</head><body>
     <div class="box">
         <h1>🏠 Dashboard</h1>
         <div class="card">
@@ -204,7 +196,7 @@ def dashboard():
         <div class="card"><a href="/orders">📦 My Orders</a></div>
         <div class="card"><a href="/profile">👤 Profile</a></div>
         <div class="card"><a href="/logout">🚪 Logout</a></div>
-    </div></body></html>\"\"\"
+    </div></body></html>"""
 
 @app.route("/profile")
 def profile():
@@ -216,7 +208,7 @@ def profile():
     user = conn.execute("SELECT username, email, balance, created_at FROM users WHERE username = ?", (username,)).fetchone()
     conn.close()
 
-    return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body>
+    return f"""<!DOCTYPE html><html><head>{STYLE}</head><body>
     <div class="box">
         <h1>👤 Profile</h1>
         <div class="card">
@@ -226,7 +218,7 @@ def profile():
             <p>Joined: <strong>{user['created_at']}</strong></p>
         </div>
         <p><a href="/dashboard">← Back to Dashboard</a></p>
-    </div></body></html>\"\"\"
+    </div></body></html>"""
 
 @app.route("/packages/<game>")
 def packages(game):
@@ -241,12 +233,12 @@ def packages(game):
     selected = game_list.get(game, [])
     html = f"<h1>{game} Packages</h1>"
     for item, price in selected:
-        html += f\"\"\"<div class="card">
+        html += f"""<div class="card">
             <strong>{item}</strong> - {price:,} Ks 
             <a href="/place_order?game={urllib.parse.quote(game)}&package={urllib.parse.quote(item)}">[Order]</a>
-        </div>\"\"\"
+        </div>"""
 
-    return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box">{html}<p><a href="/dashboard">Back</a></p></div></body></html>\"\"\"
+    return f"""<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box">{html}<p><a href="/dashboard">Back</a></p></div></body></html>"""
 
 @app.route("/place_order", methods=["GET", "POST"])
 def place_order():
@@ -263,10 +255,10 @@ def place_order():
         transaction = request.form.get("transaction")
 
         conn = get_db()
-        conn.execute(\"\"\"
+        conn.execute("""
             INSERT INTO orders (order_id, username, game, package, game_id, server_id, payment, transaction_number, status, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
-        \"\"\", (order_id, session["username"], game, package, game_id, server_id, payment, transaction, now()))
+        """, (order_id, session["username"], game, package, game_id, server_id, payment, transaction, now()))
         conn.commit()
         conn.close()
 
@@ -281,12 +273,12 @@ def place_order():
             "transaction": transaction
         })
 
-        return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box"><h1>✅ Order Submitted</h1><p>Order ID: {order_id}</p><a href="/orders">View Orders</a></div></body></html>\"\"\"
+        return f"""<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box"><h1>✅ Order Submitted</h1><p>Order ID: {order_id}</p><a href="/orders">View Orders</a></div></body></html>"""
 
     game = request.args.get("game", "")
     package = request.args.get("package", "")
 
-    return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box">
+    return f"""<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box">
     <h1>🛒 Place Order</h1>
     <form method="POST">
         <input type="hidden" name="game" value="{game}">
@@ -301,7 +293,7 @@ def place_order():
         <input type="text" name="transaction" placeholder="Transaction Last 5 digits" required>
         <button type="submit">Submit Order</button>
     </form>
-    </div></body></html>\"\"\"
+    </div></body></html>"""
 
 @app.route("/orders")
 def orders():
@@ -314,28 +306,13 @@ def orders():
 
     items_html = ""
     for o in order_list:
-        items_html += f\"\"\"<div class="card">
+        items_html += f"""<div class="card">
             <p><strong>#{o['order_id']}</strong> - {o['game']} ({o['package']})</p>
             <p>Status: <span>{o['status']}</span></p>
-        </div>\"\"\"
+        </div>"""
 
-    return f\"\"\"<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box"><h1>📦 Order History</h1>{items_html or '<p>No orders yet.</p>'}<p><a href="/dashboard">Back</a></p></div></body></html>\"\"\"
+    return f"""<!DOCTYPE html><html><head>{STYLE}</head><body><div class="box"><h1>📦 Order History</h1>{items_html or '<p>No orders yet.</p>'}<p><a href="/dashboard">Back</a></p></div></body></html>"""
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-"""
-
-req_content = """Flask
-requests
-werkzeug
-gunicorn
-"""
-
-with open("app.py", "w", encoding="utf-8") as f:
-    f.write(app_py_content)
-
-with open("requirements.txt", "w", encoding="utf-8") as f:
-    f.write(req_content)
-
-print("Files generated successfully.")
